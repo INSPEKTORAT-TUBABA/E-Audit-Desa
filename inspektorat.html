@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inspektorat — e-Audit Dana Desa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.kec-row { margin-bottom: 12px; }
+.kec-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.kec-sub { font-size: 11px; color: var(--text-hint); }
+.input-rupiah { position: relative; }
+.input-rupiah span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+.input-rupiah input { padding-left: 34px; }
+.real-pct { font-size: 11px; font-family: var(--mono); color: var(--text-muted); margin-top: 3px; }
+.catatan-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+.catatan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.catatan-uraian { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+.catatan-rek { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.catatan-meta { font-size: 11px; color: var(--text-hint); margin-top: 6px; }
+.inline-edit { border: none; background: transparent; font-size: inherit; font-family: inherit; color: inherit; padding: 0; width: 100%; }
+.page-section { display: none; }
+.page-section.active { display: block; }
+.export-option { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: border-color .15s; }
+.export-option:hover { border-color: var(--accent); }
+.export-icon { font-size: 28px; }
+.export-label { font-size: 13px; font-weight: 500; }
+.export-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-mark">e</div>
+        <div>
+          <div class="logo-text">e-Audit Dana Desa</div>
+          <div class="logo-sub">Inspektorat Kab. Tulang Bawang Barat</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-name" id="sidebar-username">—</div>
+      <div class="user-role">Inspektorat / Administrator</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Utama</div>
+      <button class="nav-item active" onclick="showSection('dashboard')">
+        <span class="nav-icon">◉</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showSection('laporan')">
+        <span class="nav-icon">◈</span> Daftar Laporan
+        <span class="nav-badge" id="badge-masuk">—</span>
+      </button>
+      <button class="nav-item" onclick="showSection('koreksi')">
+        <span class="nav-icon">✎</span> Koreksi & Catatan
+      </button>
+      <button class="nav-item" onclick="showSection('status')">
+        <span class="nav-icon">◐</span> Status Audit
+      </button>
+      <div class="nav-section">Output</div>
+      <button class="nav-item" onclick="showSection('ekspor')">
+        <span class="nav-icon">↓</span> Ekspor Laporan
+      </button>
+      <div class="nav-section">Manajemen</div>
+      <button class="nav-item" onclick="showSection('desa-mgmt')">
+        <span class="nav-icon">⊞</span> Kelola Desa
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="Auth.logout()">&#8592; Keluar dari sistem</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="section-title">Dashboard Audit</div>
+        <div class="topbar-sub">Tahun Anggaran 2025 — Kab. Tulang Bawang Barat</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12px;color:var(--text-muted)" id="clock"></span>
+        <button class="btn btn-sm" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="page-section active" id="sec-dashboard">
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Progres per kecamatan</div>
+            <div id="kec-progress"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Aktivitas terbaru</div>
+            <div class="log-list" id="activity-log"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Distribusi status audit</div>
+          <div id="status-bar"></div>
+        </div>
+      </div>
+
+      <!-- ===== DAFTAR LAPORAN ===== -->
+      <div class="page-section" id="sec-laporan">
+        <div class="filter-bar">
+          <select id="f-status" onchange="renderLaporanTable()">
+            <option value="">Semua status</option>
+            <option>Dalam review</option>
+            <option>Perlu koreksi</option>
+            <option>Selesai</option>
+            <option>Draf</option>
+          </select>
+          <select id="f-kec" onchange="renderLaporanTable()">
+            <option value="">Semua kecamatan</option>
+            <option>Tulang Bawang Tengah</option>
+            <option>Tulang Bawang Udik</option>
+            <option>Gunung Agung</option>
+            <option>Pagar Dewa</option>
+          </select>
+          <input type="text" id="f-search" placeholder="Cari nama desa..." oninput="renderLaporanTable()">
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Desa / Kecamatan</th>
+                <th>Periode</th>
+                <th>Pagu Dana Desa</th>
+                <th>Total Realisasi</th>
+                <th>Serapan</th>
+                <th>Status</th>
+                <th>Tgl Kirim</th>
+                <th>Aksi</th>
+              </tr></thead>
+              <tbody id="laporan-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== KOREKSI ===== -->
+      <div class="page-section" id="sec-koreksi">
+        <div class="filter-bar">
+          <select id="koreksi-lap-sel" onchange="loadKoreksiLaporan()">
+            <option value="">Pilih laporan desa...</option>
+          </select>
+        </div>
+        <div id="koreksi-empty" style="text-align:center;padding:48px;color:var(--text-hint);font-size:13px">
+          Pilih laporan desa di atas untuk memberikan koreksi
+        </div>
+        <div id="koreksi-body" style="display:none">
+          <div class="grid-3" id="koreksi-stats"></div>
+          <div class="grid-2" style="margin-top:0">
+            <div>
+              <div class="card">
+                <div class="section-div">Realisasi per bidang</div>
+                <table style="font-size:12px">
+                  <thead><tr><th>Bidang</th><th>Anggaran</th><th>Realisasi</th><th>%</th></tr></thead>
+                  <tbody id="koreksi-bidang"></tbody>
+                </table>
+              </div>
+              <div class="card">
+                <div class="section-div">Riwayat catatan</div>
+                <div id="catatan-list"></div>
+              </div>
+            </div>
+            <div>
+              <div class="card">
+                <div class="section-div">Tambah catatan koreksi</div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Jenis temuan</label>
+                    <select id="cat-jenis">
+                      <option>Administrasi</option>
+                      <option>Keuangan</option>
+                      <option>Fisik kegiatan</option>
+                      <option>Keterlambatan</option>
+                      <option>Lainnya</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Tingkat risiko</label>
+                    <select id="cat-risiko">
+                      <option>Rendah</option>
+                      <option>Sedang</option>
+                      <option>Tinggi</option>
+                    </select>
+                  </div>
+                  <div class="form-group full">
+                    <label>Uraian temuan</label>
+                    <textarea id="cat-uraian" placeholder="Tuliskan temuan atau catatan koreksi..."></textarea>
+                  </div>
+                  <div class="form-group full">
+                    <label>Rekomendasi perbaikan</label>
+                    <textarea id="cat-rek" placeholder="Rekomendasi yang harus ditindaklanjuti desa..." style="min-height:60px"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>Nama auditor</label>
+                    <input type="text" id="cat-auditor" placeholder="Nama pemeriksa">
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn btn-primary" onclick="simpanCatatan()">Simpan & kirim ke desa</button>
+                </div>
+              </div>
+              <div class="card">
+                <div class="section-div">Ubah status laporan</div>
+                <div class="form-group" style="margin-bottom:10px">
+                  <label>Status audit</label>
+                  <select id="ubah-status">
+                    <option>Dalam review</option>
+                    <option>Perlu koreksi</option>
+                    <option>Selesai</option>
+                  </select>
+                </div>
+                <button class="btn btn-accent" style="width:100%" onclick="simpanStatus()">Perbarui status</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== STATUS AUDIT ===== -->
+      <div class="page-section" id="sec-status">
+        <div class="filter-bar">
+          <select id="sf-kec" onchange="renderStatusTable()">
+            <option value="">Semua kecamatan</option>
+            <option>Tulang Bawang Tengah</option>
+            <option>Tulang Bawang Udik</option>
+            <option>Gunung Agung</option>
+            <option>Pagar Dewa</option>
+          </select>
+          <select id="sf-status" onchange="renderStatusTable()">
+            <option value="">Semua status</option>
+            <option>Belum lapor</option>
+            <option>Dalam review</option>
+            <option>Perlu koreksi</option>
+            <option>Selesai</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Desa</th><th>Kecamatan</th><th>Pagu</th><th>Laporan masuk</th><th>Catatan</th><th>Status</th><th>Ubah status</th>
+              </tr></thead>
+              <tbody id="status-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== EKSPOR ===== -->
+      <div class="page-section" id="sec-ekspor">
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-div">Ekspor rekap semua desa</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Format</label>
+              <select id="exp-format">
+                <option value="csv">CSV (dapat dibuka di Excel)</option>
+                <option value="print">Cetak / PDF</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Filter status</label>
+              <select id="exp-status">
+                <option value="">Semua status</option>
+                <option>Selesai</option>
+                <option>Dalam review</option>
+                <option>Perlu koreksi</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="eksporRekap()">↓ Unduh rekap desa</button>
+          </div>
+          <div class="card">
+            <div class="section-div">Ekspor catatan temuan</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Filter risiko</label>
+              <select id="exp-risiko">
+                <option value="">Semua risiko</option>
+                <option>Rendah</option>
+                <option>Sedang</option>
+                <option>Tinggi</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Format</label>
+              <select><option value="csv">CSV</option></select>
+            </div>
+            <button class="btn btn-primary" style="width:100%" onclick="eksporCatatan()">↓ Unduh catatan temuan</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-div">Pratinjau data ekspor</div>
+          <div class="table-wrap">
+            <table id="preview-table">
+              <thead><tr><th>Desa</th><th>Kecamatan</th><th>Pagu</th><th>Realisasi</th><th>Serapan</th><th>Status</th><th>Catatan</th></tr></thead>
+              <tbody id="preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== KELOLA DESA ===== -->
+      <div class="page-section" id="sec-desa-mgmt">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="btn btn-primary" onclick="openTambahDesa()">+ Tambah desa</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>ID Desa</th><th>Nama Desa</th><th>Kecamatan</th><th>Pagu Dana Desa</th><th>Password</th><th>Aksi</th>
+              </tr></thead>
+              <tbody id="desa-mgmt-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main-content -->
+</div>
+
+<!-- MODAL DETAIL LAPORAN -->
+<div class="modal-overlay" id="modal-detail" style="display:none">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-detail-title">Detail Laporan</div>
+      <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH DESA -->
+<div class="modal-overlay" id="modal-desa" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-desa-title">Tambah Desa</div>
+      <button class="modal-close" onclick="closeModal('modal-desa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nama desa</label>
+          <input type="text" id="d-nama" placeholder="Desa ...">
+        </div>
+        <div class="form-group">
+          <label>Kecamatan</label>
+          <select id="d-kec">
+            <option>Tulang Bawang Tengah</option>
+            <option>Tulang Bawang Udik</option>
+            <option>Gunung Agung</option>
+            <option>Pagar Dewa</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pagu Dana Desa (Rp)</label>
+          <input type="number" id="d-pagu" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Password login desa</label>
+          <input type="text" id="d-pass" placeholder="password123">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-desa')">Batal</button>
+      <button class="btn btn-primary" onclick="simpanDesa()">Simpan desa</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="../js/db.js"></script>
+<script>
+let currentLaporanId = null;
+let editDesaId = null;
+
+// Auth guard
+const user = Auth.requireRole('inspektorat');
+document.getElementById('sidebar-username').textContent = user.nama || 'Inspektorat';
+
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID');
+}, 1000);
+
+function showSection(id) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const titles = { dashboard:'Dashboard Audit', laporan:'Daftar Laporan Desa', koreksi:'Koreksi & Catatan', status:'Status Audit', ekspor:'Ekspor Laporan', 'desa-mgmt':'Kelola Desa' };
+  document.getElementById('section-title').textContent = titles[id] || id;
+  if (id === 'laporan') renderLaporanTable();
+  if (id === 'koreksi') populateKoreksiSelect();
+  if (id === 'status') renderStatusTable();
+  if (id === 'ekspor') renderPreview();
+  if (id === 'desa-mgmt') renderDesaMgmt();
+}
+
+function refreshAll() { renderDashboard(); showToast('Data diperbarui'); }
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const stats = DB.getStats();
+  const desas = DB.getDesas();
+  const laporan = DB.getLaporan();
+
+  // Stats cards
+  const totalReal = laporan.reduce((a, l) => a + Fmt.totalReal(l.realisasi), 0);
+  const totalPagu = desas.reduce((a, d) => a + d.pagu, 0);
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Desa</div><div class="stat-val">${stats.total}</div><div class="stat-sub">Terdaftar di sistem</div></div>
+    <div class="stat-card"><div class="stat-label">Laporan Masuk</div><div class="stat-val">${stats.masuk}</div><div class="stat-sub">${Math.round(stats.masuk/stats.total*100)}% dari total desa</div></div>
+    <div class="stat-card"><div class="stat-label">Selesai Diaudit</div><div class="stat-val">${stats.byStatus['Selesai']||0}</div><div class="stat-sub">Dari ${stats.masuk} laporan masuk</div></div>
+    <div class="stat-card"><div class="stat-label">Total Realisasi</div><div class="stat-val" style="font-size:18px">${Fmt.rupiahShort(totalReal)}</div><div class="stat-sub">Dari pagu ${Fmt.rupiahShort(totalPagu)}</div></div>`;
+
+  document.getElementById('badge-masuk').textContent = stats.masuk;
+
+  // Kec progress
+  const kecamatan = ['Tulang Bawang Tengah','Tulang Bawang Udik','Gunung Agung','Pagar Dewa'];
+  const kecHtml = kecamatan.map(kec => {
+    const kDesas = desas.filter(d => d.kec === kec);
+    const kLaporan = laporan.filter(l => l.kec === kec);
+    const selesai = kLaporan.filter(l => l.status === 'Selesai').length;
+    const pct = kDesas.length > 0 ? Math.round(selesai / kDesas.length * 100) : 0;
+    return `<div class="kec-row">
+      <div class="kec-name"><span>${kec}</span><span class="kec-sub">${selesai}/${kDesas.length} desa</span></div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('kec-progress').innerHTML = kecHtml;
+
+  // Activity log
+  const recent = laporan.slice(-5).reverse();
+  const dotColors = { 'Selesai':'#4caf78','Dalam review':'#e67e22','Perlu koreksi':'#2471a3','Draf':'#9db8a5' };
+  const logHtml = recent.length ? recent.map(l => `
+    <div class="log-item">
+      <div class="log-dot" style="background:${dotColors[l.status]||'#ccc'}"></div>
+      <div class="log-body">
+        <div class="log-title">${l.desaNama} — ${l.status}</div>
+        <div class="log-meta">${l.periode} ${l.tahun} · Dikirim ${Fmt.date(l.tglKirim)}</div>
+      </div>
+    </div>`).join('')
+    : '<div style="padding:20px;text-align:center;font-size:12px;color:var(--text-hint)">Belum ada aktivitas</div>';
+  document.getElementById('activity-log').innerHTML = logHtml;
+
+  // Status bar
+  const statuses = [
+    { label:'Belum lapor', count:stats.byStatus['Belum lapor']||0, color:'#d1cec8' },
+    { label:'Draf', count:stats.byStatus['Draf']||0, color:'#b5cac0' },
+    { label:'Dalam review', count:stats.byStatus['Dalam review']||0, color:'#f9a825' },
+    { label:'Perlu koreksi', count:stats.byStatus['Perlu koreksi']||0, color:'#64b5f6' },
+    { label:'Selesai', count:stats.byStatus['Selesai']||0, color:'#4caf78' },
+  ];
+  const total2 = stats.total;
+  const barHtml = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      ${statuses.map(s => `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)"><div style="width:10px;height:10px;border-radius:2px;background:${s.color}"></div>${s.label} (${s.count})</div>`).join('')}
+    </div>
+    <div style="display:flex;border-radius:var(--radius);overflow:hidden;height:28px;gap:2px">
+      ${statuses.filter(s=>s.count>0).map(s => `<div style="width:${(s.count/total2*100).toFixed(1)}%;background:${s.color};display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(0,0,0,.5);min-width:20px">${s.count}</div>`).join('')}
+    </div>`;
+  document.getElementById('status-bar').innerHTML = barHtml;
+}
+
+// ===== LAPORAN TABLE =====
+function renderLaporanTable() {
+  const st = document.getElementById('f-status').value;
+  const kec = document.getElementById('f-kec').value;
+  const q = document.getElementById('f-search').value.toLowerCase();
+  const desas = DB.getDesas();
+  const laporan = DB.getLaporan();
+  const laporanDesaIds = new Set(laporan.map(l => l.desaId));
+
+  let rows = [];
+  desas.forEach(d => {
+    const laps = laporan.filter(l => l.desaId === d.id);
+    if (laps.length === 0) {
+      rows.push({ desaId: d.id, desaNama: d.nama, kec: d.kec, pagu: d.pagu, realisasi:{}, status:'Belum lapor', tglKirim:null, periode:'—', id:null });
+    } else {
+      laps.forEach(l => rows.push(l));
+    }
+  });
+
+  rows = rows.filter(r =>
+    (!st || r.status === st) &&
+    (!kec || r.kec === kec) &&
+    (!q || r.desaNama.toLowerCase().includes(q))
+  );
+
+  const tbody = document.getElementById('laporan-tbody');
+  tbody.innerHTML = rows.map(r => {
+    const real = Fmt.totalReal(r.realisasi);
+    const pct = r.pagu > 0 ? ((real/r.pagu)*100).toFixed(1) : '—';
+    return `<tr>
+      <td><div style="font-weight:500">${r.desaNama}</div><div style="font-size:11px;color:var(--text-hint)">${r.kec}</div></td>
+      <td>${r.periode || '—'}</td>
+      <td style="font-family:var(--mono);font-size:12px">${Fmt.rupiahShort(r.pagu)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${real > 0 ? Fmt.rupiahShort(real) : '—'}</td>
+      <td>${pct !== '—' ? `<span style="font-size:12px;font-weight:500;color:${parseFloat(pct)>=90?'#2d5a14':parseFloat(pct)>=70?'#9a5700':'#9b2c2c'}">${pct}%</span>` : '—'}</td>
+      <td><span class="badge ${STATUS_BADGE[r.status]||'badge-gray'}">${r.status}</span></td>
+      <td style="font-size:12px;color:var(--text-muted)">${Fmt.date(r.tglKirim)}</td>
+      <td>${r.id ? `<button class="btn btn-xs" onclick="openDetailModal('${r.id}')">Detail</button>` : '<span style="font-size:11px;color:var(--text-hint)">Belum ada</span>'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-hint)">Tidak ada data</td></tr>';
+}
+
+// ===== DETAIL MODAL =====
+function openDetailModal(id) {
+  const l = DB.getLaporanById(id);
+  if (!l) return;
+  const real = Fmt.totalReal(l.realisasi);
+  const pct = ((real/l.pagu)*100).toFixed(1);
+  const bidangNames = { pemerintahan:'Penyelenggaraan Pemerintahan', pembangunan:'Pelaksanaan Pembangunan', pembinaan:'Pembinaan Kemasyarakatan', pemberdayaan:'Pemberdayaan Masyarakat', penanggulangan:'Penanggulangan Bencana' };
+  document.getElementById('modal-detail-title').textContent = `${l.desaNama} — ${l.periode} ${l.tahun}`;
+  document.getElementById('modal-detail-body').innerHTML = `
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Pagu</div><div class="stat-val" style="font-size:16px">${Fmt.rupiahShort(l.pagu)}</div></div>
+      <div class="stat-card"><div class="stat-label">Realisasi</div><div class="stat-val" style="font-size:16px">${Fmt.rupiahShort(real)}</div></div>
+      <div class="stat-card"><div class="stat-label">Serapan</div><div class="stat-val" style="font-size:16px">${pct}%</div></div>
+    </div>
+    <div class="section-div">Realisasi per bidang</div>
+    <table style="font-size:12px;margin-bottom:16px">
+      <thead><tr><th>Bidang</th><th>Anggaran</th><th>Realisasi</th><th>Serapan</th></tr></thead>
+      <tbody>
+        ${Object.entries(l.realisasi).map(([k,v]) => `
+        <tr>
+          <td>${bidangNames[k]||k}</td>
+          <td style="font-family:var(--mono)">${Fmt.rupiahShort(l.pagu * (v / real) || 0)}</td>
+          <td style="font-family:var(--mono)">${Fmt.rupiahShort(v)}</td>
+          <td><span class="badge ${v > 0 ? 'badge-green':'badge-gray'}">${v > 0 ? '✓' : '—'}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="section-div">Info laporan</div>
+    <div style="font-size:12px;color:var(--text-muted)">No. SPJ: <b>${l.nomorSpj||'—'}</b> · Dikirim: <b>${Fmt.date(l.tglKirim)}</b> · Status: <span class="badge ${STATUS_BADGE[l.status]||''}">${l.status}</span></div>
+    ${l.keterangan ? `<div style="font-size:12px;color:var(--text-muted);margin-top:8px">Keterangan: ${l.keterangan}</div>` : ''}
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-detail')">Tutup</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-detail');selectKoreksiLap('${id}')">Beri koreksi ↗</button>
+    </div>`;
+  document.getElementById('modal-detail').style.display = 'flex';
+}
+
+// ===== KOREKSI =====
+function populateKoreksiSelect() {
+  const laporan = DB.getLaporan().filter(l => l.status !== 'Draf');
+  const sel = document.getElementById('koreksi-lap-sel');
+  sel.innerHTML = '<option value="">Pilih laporan desa...</option>' +
+    laporan.map(l => `<option value="${l.id}">${l.desaNama} — ${l.periode} ${l.tahun}</option>`).join('');
+}
+
+function selectKoreksiLap(id) {
+  showSection('koreksi');
+  document.querySelector('[onclick="showSection(\'koreksi\')"]').classList.add('active');
+  setTimeout(() => {
+    document.getElementById('koreksi-lap-sel').value = id;
+    loadKoreksiLaporan();
+  }, 100);
+}
+
+function loadKoreksiLaporan() {
+  const id = document.getElementById('koreksi-lap-sel').value;
+  currentLaporanId = id || null;
+  const empty = document.getElementById('koreksi-empty');
+  const body = document.getElementById('koreksi-body');
+  if (!id) { empty.style.display='block'; body.style.display='none'; return; }
+  empty.style.display='none'; body.style.display='block';
+  const l = DB.getLaporanById(id);
+  if (!l) return;
+  const real = Fmt.totalReal(l.realisasi);
+  const pct = ((real/l.pagu)*100).toFixed(1);
+  document.getElementById('koreksi-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Pagu</div><div class="stat-val" style="font-size:17px">${Fmt.rupiahShort(l.pagu)}</div></div>
+    <div class="stat-card"><div class="stat-label">Realisasi</div><div class="stat-val" style="font-size:17px">${Fmt.rupiahShort(real)}</div></div>
+    <div class="stat-card"><div class="stat-label">Serapan</div><div class="stat-val" style="font-size:17px">${pct}%</div></div>`;
+
+  const bidangNames = { pemerintahan:'Pemerintahan', pembangunan:'Pembangunan', pembinaan:'Pembinaan', pemberdayaan:'Pemberdayaan', penanggulangan:'Penanggulangan' };
+  document.getElementById('koreksi-bidang').innerHTML = Object.entries(l.realisasi).map(([k,v]) => `
+    <tr>
+      <td>${bidangNames[k]||k}</td>
+      <td style="font-family:var(--mono);font-size:11px">${Fmt.rupiahShort(Math.round(l.pagu * v / real)||0)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${Fmt.rupiahShort(v)}</td>
+      <td><span class="badge ${v/real > .9 ? 'badge-green': v/real > .7 ? 'badge-amber':'badge-red'}">${((v/real)*100).toFixed(0)}%</span></td>
+    </tr>`).join('');
+
+  document.getElementById('ubah-status').value = l.status === 'Dalam review' ? 'Dalam review' : l.status;
+  renderCatatanList(l);
+}
+
+function renderCatatanList(l) {
+  const risikoColor = { Rendah:'#4caf78', Sedang:'#e67e22', Tinggi:'#c0392b' };
+  const list = document.getElementById('catatan-list');
+  if (!l.catatan || l.catatan.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-hint);padding:12px 0">Belum ada catatan koreksi</div>';
+    return;
+  }
+  list.innerHTML = l.catatan.map(c => `
+    <div class="catatan-card">
+      <div class="catatan-header">
+        <div><span class="badge badge-gray">${c.jenis}</span> <span class="badge ${RISIKO_BADGE[c.risiko]||''}">${c.risiko}</span></div>
+        <span class="badge ${c.status==='Selesai'?'badge-green':'badge-amber'}" style="cursor:pointer" onclick="toggleCatatanStatus('${c.id}')">${c.status}</span>
+      </div>
+      <div class="catatan-uraian">${c.uraian}</div>
+      <div class="catatan-rek">↳ ${c.rekomendasi}</div>
+      <div class="catatan-meta">Auditor: ${c.auditor} · ${Fmt.date(c.tgl)}</div>
+    </div>`).join('');
+}
+
+function simpanCatatan() {
+  if (!currentLaporanId) return;
+  const uraian = document.getElementById('cat-uraian').value.trim();
+  if (!uraian) { showToast('Uraian temuan tidak boleh kosong'); return; }
+  const catatan = {
+    id: Fmt.id('cat'),
+    jenis: document.getElementById('cat-jenis').value,
+    risiko: document.getElementById('cat-risiko').value,
+    uraian,
+    rekomendasi: document.getElementById('cat-rek').value,
+    auditor: document.getElementById('cat-auditor').value || 'Inspektorat',
+    tgl: new Date().toISOString().split('T')[0],
+    status: 'Belum ditindaklanjuti'
+  };
+  DB.addCatatan(currentLaporanId, catatan);
+  if (document.getElementById('cat-risiko').value !== 'Rendah') {
+    DB.updateStatus(currentLaporanId, 'Perlu koreksi');
+  }
+  document.getElementById('cat-uraian').value = '';
+  document.getElementById('cat-rek').value = '';
+  loadKoreksiLaporan();
+  showToast('Catatan koreksi berhasil disimpan dan dikirim ke desa');
+}
+
+function simpanStatus() {
+  if (!currentLaporanId) return;
+  const st = document.getElementById('ubah-status').value;
+  DB.updateStatus(currentLaporanId, st);
+  showToast('Status laporan diperbarui: ' + st);
+  renderDashboard();
+}
+
+function toggleCatatanStatus(catId) {
+  const l = DB.getLaporanById(currentLaporanId);
+  if (!l) return;
+  const cat = l.catatan.find(c => c.id === catId);
+  if (cat) {
+    const newStatus = cat.status === 'Selesai' ? 'Belum ditindaklanjuti' : 'Selesai';
+    DB.updateCatatanStatus(currentLaporanId, catId, newStatus);
+    loadKoreksiLaporan();
+  }
+}
+
+// ===== STATUS TABLE =====
+function renderStatusTable() {
+  const kec = document.getElementById('sf-kec').value;
+  const st = document.getElementById('sf-status').value;
+  const desas = DB.getDesas();
+  const laporan = DB.getLaporan();
+
+  let rows = desas.filter(d => (!kec || d.kec === kec));
+  const tbody = document.getElementById('status-tbody');
+  tbody.innerHTML = rows.map(d => {
+    const laps = laporan.filter(l => l.desaId === d.id);
+    const latest = laps[laps.length - 1];
+    const status = latest ? latest.status : 'Belum lapor';
+    const catCount = latest ? (latest.catatan||[]).length : 0;
+    if (st && status !== st) return '';
+    return `<tr>
+      <td style="font-weight:500">${d.nama}</td>
+      <td style="font-size:12px">${d.kec}</td>
+      <td style="font-family:var(--mono);font-size:12px">${Fmt.rupiahShort(d.pagu)}</td>
+      <td style="font-size:12px">${latest ? Fmt.date(latest.tglKirim) : '—'}</td>
+      <td style="font-size:12px">${catCount > 0 ? `<span class="badge badge-amber">${catCount} catatan</span>` : '—'}</td>
+      <td><span class="badge ${STATUS_BADGE[status]||'badge-gray'}">${status}</span></td>
+      <td>${latest ? `<select style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface)" onchange="quickUpdateStatus('${latest.id}',this.value)">
+        <option ${latest.status==='Dalam review'?'selected':''}>Dalam review</option>
+        <option ${latest.status==='Perlu koreksi'?'selected':''}>Perlu koreksi</option>
+        <option ${latest.status==='Selesai'?'selected':''}>Selesai</option>
+      </select>` : '<span style="font-size:11px;color:var(--text-hint)">Belum ada laporan</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function quickUpdateStatus(id, val) {
+  DB.updateStatus(id, val);
+  showToast('Status diperbarui: ' + val);
+  renderDashboard();
+}
+
+// ===== EKSPOR =====
+function renderPreview() {
+  const desas = DB.getDesas();
+  const laporan = DB.getLaporan();
+  const tbody = document.getElementById('preview-tbody');
+  tbody.innerHTML = desas.map(d => {
+    const l = laporan.filter(ll => ll.desaId === d.id).pop();
+    const real = l ? Fmt.totalReal(l.realisasi) : 0;
+    const pct = real > 0 ? ((real/d.pagu)*100).toFixed(1)+'%' : '—';
+    const status = l ? l.status : 'Belum lapor';
+    const catCount = l ? (l.catatan||[]).length : 0;
+    return `<tr>
+      <td style="font-size:12px;font-weight:500">${d.nama}</td>
+      <td style="font-size:12px">${d.kec}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${Fmt.rupiahShort(d.pagu)}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${real > 0 ? Fmt.rupiahShort(real) : '—'}</td>
+      <td style="font-size:12px">${pct}</td>
+      <td><span class="badge ${STATUS_BADGE[status]||'badge-gray'}" style="font-size:10px">${status}</span></td>
+      <td style="font-size:11px">${catCount}</td>
+    </tr>`;
+  }).join('');
+}
+
+function eksporRekap() {
+  const desas = DB.getDesas();
+  const laporan = DB.getLaporan();
+  const filterSt = document.getElementById('exp-status').value;
+  let rows = desas.map(d => {
+    const l = laporan.filter(ll => ll.desaId === d.id).pop();
+    const real = l ? Fmt.totalReal(l.realisasi) : 0;
+    const status = l ? l.status : 'Belum lapor';
+    return { nama:d.nama, kec:d.kec, pagu:d.pagu, real, status, catatan:(l&&l.catatan)?l.catatan.length:0 };
+  }).filter(r => !filterSt || r.status === filterSt);
+
+  const csv = ['Nama Desa;Kecamatan;Pagu;Realisasi;Serapan (%);Status;Jml Catatan',
+    ...rows.map(r => `${r.nama};${r.kec};${r.pagu};${r.real};${r.pagu>0?((r.real/r.pagu)*100).toFixed(1):0};${r.status};${r.catatan}`)
+  ].join('\n');
+  downloadFile(csv, 'Rekap_Dana_Desa_2025.csv', 'text/csv');
+  showToast('File berhasil diunduh: Rekap_Dana_Desa_2025.csv');
+}
+
+function eksporCatatan() {
+  const laporan = DB.getLaporan();
+  const filterRisiko = document.getElementById('exp-risiko').value;
+  const rows = [];
+  laporan.forEach(l => {
+    (l.catatan||[]).forEach(c => {
+      if (!filterRisiko || c.risiko === filterRisiko)
+        rows.push(`${l.desaNama};${l.kec};${l.periode} ${l.tahun};${c.jenis};${c.risiko};${c.uraian};${c.rekomendasi};${c.auditor};${c.tgl};${c.status}`);
+    });
+  });
+  const csv = ['Desa;Kecamatan;Periode;Jenis;Risiko;Uraian;Rekomendasi;Auditor;Tanggal;Status', ...rows].join('\n');
+  downloadFile(csv, 'Catatan_Temuan_2025.csv', 'text/csv');
+  showToast('File berhasil diunduh: Catatan_Temuan_2025.csv');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob(['\uFEFF' + content], { type: type + ';charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ===== KELOLA DESA =====
+function renderDesaMgmt() {
+  const desas = DB.getDesas();
+  document.getElementById('desa-mgmt-tbody').innerHTML = desas.map(d => `
+    <tr>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text-hint)">${d.id}</td>
+      <td style="font-weight:500">${d.nama}</td>
+      <td style="font-size:12px">${d.kec}</td>
+      <td style="font-family:var(--mono);font-size:12px">${Fmt.rupiah(d.pagu)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${d.pass}</td>
+      <td><button class="btn btn-xs" onclick="editDesa('${d.id}')">Edit</button></td>
+    </tr>`).join('');
+}
+
+function openTambahDesa() {
+  editDesaId = null;
+  document.getElementById('modal-desa-title').textContent = 'Tambah Desa';
+  document.getElementById('d-nama').value = '';
+  document.getElementById('d-pagu').value = '';
+  document.getElementById('d-pass').value = '';
+  document.getElementById('modal-desa').style.display = 'flex';
+}
+
+function editDesa(id) {
+  const d = DB.getDesas().find(x => x.id === id);
+  if (!d) return;
+  editDesaId = id;
+  document.getElementById('modal-desa-title').textContent = 'Edit Desa: ' + d.nama;
+  document.getElementById('d-nama').value = d.nama;
+  document.getElementById('d-kec').value = d.kec;
+  document.getElementById('d-pagu').value = d.pagu;
+  document.getElementById('d-pass').value = d.pass;
+  document.getElementById('modal-desa').style.display = 'flex';
+}
+
+function simpanDesa() {
+  const nama = document.getElementById('d-nama').value.trim();
+  if (!nama) { showToast('Nama desa wajib diisi'); return; }
+  const desas = DB.getDesas();
+  if (editDesaId) {
+    const idx = desas.findIndex(d => d.id === editDesaId);
+    if (idx >= 0) {
+      desas[idx].nama = nama;
+      desas[idx].kec = document.getElementById('d-kec').value;
+      desas[idx].pagu = Number(document.getElementById('d-pagu').value) || 0;
+      desas[idx].pass = document.getElementById('d-pass').value;
+    }
+  } else {
+    desas.push({ id: Fmt.id('desa'), nama, kec: document.getElementById('d-kec').value, pass: document.getElementById('d-pass').value, pagu: Number(document.getElementById('d-pagu').value) || 0 });
+  }
+  DB.saveDesas(desas);
+  closeModal('modal-desa');
+  renderDesaMgmt();
+  showToast(editDesaId ? 'Data desa berhasil diperbarui' : 'Desa baru berhasil ditambahkan');
+}
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// Init
+renderDashboard();
+</script>
+</body>
+</html>

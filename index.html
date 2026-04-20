@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e-Audit Dana Desa — Inspektorat Tulang Bawang Barat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #1a3a2a;
+  --primary-mid: #2d5c42;
+  --accent: #4caf78;
+  --accent-light: #d4f0e0;
+  --danger: #c0392b;
+  --danger-light: #fdecea;
+  --warn: #e67e22;
+  --warn-light: #fef3e2;
+  --info: #2471a3;
+  --info-light: #e8f4fb;
+  --surface: #f7f9f7;
+  --card: #ffffff;
+  --border: #e2ebe5;
+  --text: #1a2e22;
+  --text-muted: #6b8c76;
+  --text-hint: #9db8a5;
+  --font: 'DM Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--surface);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 860px;
+  width: 100%;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.login-hero {
+  background: var(--primary);
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.login-hero::before {
+  content: '';
+  position: absolute;
+  bottom: -60px; right: -60px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: rgba(76,175,120,.12);
+}
+.login-hero::after {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(76,175,120,.08);
+}
+.hero-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.logo-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.2;
+}
+.logo-sub { font-size: 11px; color: rgba(255,255,255,.5); font-weight: 400; }
+.hero-content { position: relative; z-index: 1; }
+.hero-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+.hero-title span { color: var(--accent); }
+.hero-desc { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.7; }
+.hero-stats {
+  display: flex;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  margin-top: 32px;
+}
+.hstat { }
+.hstat-val { font-size: 20px; font-weight: 600; color: var(--accent); }
+.hstat-label { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 2px; }
+.login-form-wrap { padding: 48px 40px; }
+.form-header { margin-bottom: 28px; }
+.form-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.form-subtitle { font-size: 13px; color: var(--text-muted); }
+.tab-switch {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all .2s;
+}
+.tab-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.form-group { margin-bottom: 16px; }
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font);
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(76,175,120,.12);
+  background: #fff;
+}
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .2s, transform .1s;
+  margin-top: 8px;
+}
+.btn-login:hover { background: var(--primary-mid); }
+.btn-login:active { transform: scale(.99); }
+.error-msg {
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-top: 12px;
+  display: none;
+}
+.hint { font-size: 11px; color: var(--text-hint); margin-top: 16px; text-align: center; line-height: 1.6; }
+.hint a { color: var(--accent); text-decoration: none; }
+@media (max-width: 640px) {
+  .login-wrap { grid-template-columns: 1fr; }
+  .login-hero { padding: 32px 24px; }
+  .login-form-wrap { padding: 32px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-hero">
+    <div class="hero-logo">
+      <div class="logo-mark">e</div>
+      <div>
+        <div class="logo-text">e-Audit Dana Desa</div>
+        <div class="logo-sub">Inspektorat Kab. Tulang Bawang Barat</div>
+      </div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-title">Audit Dana Desa yang <span>Transparan</span> dan Akuntabel</div>
+      <div class="hero-desc">Sistem pelaporan dan audit dana desa secara digital. Desa input laporan, inspektorat koreksi — semua terdokumentasi.</div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-val">82</div><div class="hstat-label">Desa aktif</div></div>
+        <div class="hstat"><div class="hstat-val">4</div><div class="hstat-label">Kecamatan</div></div>
+        <div class="hstat"><div class="hstat-val">2025</div><div class="hstat-label">Tahun anggaran</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="login-form-wrap">
+    <div class="form-header">
+      <div class="form-title">Masuk ke sistem</div>
+      <div class="form-subtitle">Pilih jenis akun untuk melanjutkan</div>
+    </div>
+    <div class="tab-switch">
+      <button class="tab-btn active" onclick="setTab('inspektorat')">Inspektorat</button>
+      <button class="tab-btn" onclick="setTab('desa')">Operator Desa</button>
+    </div>
+
+    <!-- Inspektorat form -->
+    <div id="form-inspektorat">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="ins-user" placeholder="admin.inspektorat" value="admin">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="ins-pass" placeholder="••••••••" value="admin123">
+      </div>
+      <button class="btn-login" onclick="loginInspektorat()">Masuk sebagai Inspektorat</button>
+      <div class="hint">Gunakan akun yang diberikan oleh administrator sistem.<br>Lupa akses? Hubungi <a href="#">admin@inspektorat-tubaba.go.id</a></div>
+    </div>
+
+    <!-- Desa form -->
+    <div id="form-desa" style="display:none">
+      <div class="form-group">
+        <label>Pilih Desa</label>
+        <select id="desa-select"></select>
+      </div>
+      <div class="form-group">
+        <label>Password Desa</label>
+        <input type="password" id="desa-pass" placeholder="••••••••">
+      </div>
+      <button class="btn-login" onclick="loginDesa()">Masuk sebagai Operator Desa</button>
+      <div class="hint">Password desa diberikan oleh inspektorat kabupaten.<br>Lupa password? Hubungi <a href="#">inspektorat-tubaba.go.id</a></div>
+    </div>
+
+    <div class="error-msg" id="err-msg">Username atau password salah. Coba lagi.</div>
+  </div>
+</div>
+
+<script>
+// Demo credentials — in production, use Firebase Auth
+const INSPEKTORAT_CREDS = { user: 'admin', pass: 'admin123' };
+
+// Desa data seeded
+const DESAS = [
+  { id:'desa_001', nama:'Desa Panaragan', kec:'Tulang Bawang Tengah', pass:'panaragan2025', pagu:987000000 },
+  { id:'desa_002', nama:'Desa Tirta Kencana', kec:'Tulang Bawang Udik', pass:'tirta2025', pagu:875000000 },
+  { id:'desa_003', nama:'Desa Mulya Kencana', kec:'Gunung Agung', pass:'mulya2025', pagu:920000000 },
+  { id:'desa_004', nama:'Desa Bujuk Agung', kec:'Tulang Bawang Tengah', pass:'bujuk2025', pagu:760000000 },
+  { id:'desa_005', nama:'Desa Pagar Dewa', kec:'Pagar Dewa', pass:'pagar2025', pagu:830000000 },
+  { id:'desa_006', nama:'Desa Candra Kencana', kec:'Gunung Agung', pass:'candra2025', pagu:690000000 },
+  { id:'desa_007', nama:'Desa Menggala Mas', kec:'Tulang Bawang Udik', pass:'menggala2025', pagu:910000000 },
+  { id:'desa_008', nama:'Desa Kibang Yekti', kec:'Pagar Dewa', pass:'kibang2025', pagu:745000000 },
+  { id:'desa_009', nama:'Desa Gunung Batin', kec:'Tulang Bawang Tengah', pass:'gunung2025', pagu:820000000 },
+  { id:'desa_010', nama:'Desa Way Abung', kec:'Tulang Bawang Udik', pass:'wayabung2025', pagu:695000000 },
+];
+
+// Seed default data to localStorage if not exist
+function seedData() {
+  if (!localStorage.getItem('eaudit_desas')) {
+    localStorage.setItem('eaudit_desas', JSON.stringify(DESAS));
+  }
+  if (!localStorage.getItem('eaudit_laporan')) {
+    const laporan = [
+      { id:'lap_001', desaId:'desa_001', desaNama:'Desa Panaragan', kec:'Tulang Bawang Tengah', tahun:2025, periode:'Semester I', status:'Dalam review', tglKirim:'2025-01-05', pagu:987000000, realisasi:{ pemerintahan:118000000, pembangunan:635000000, pembinaan:95000000, pemberdayaan:142000000, penanggulangan:59000000 }, keterangan:'Laporan realisasi semester I TA 2025', nomorSpj:'SPJ/001/2025', catatan:[] },
+      { id:'lap_002', desaId:'desa_002', desaNama:'Desa Tirta Kencana', kec:'Tulang Bawang Udik', tahun:2025, periode:'Semester I', status:'Selesai', tglKirim:'2025-01-03', pagu:875000000, realisasi:{ pemerintahan:105000000, pembangunan:520000000, pembinaan:80000000, pemberdayaan:130000000, penanggulangan:40000000 }, keterangan:'', nomorSpj:'SPJ/002/2025', catatan:[{ id:'cat_001', jenis:'Administrasi', risiko:'Rendah', uraian:'Dokumen SPJ sudah lengkap', rekomendasi:'Pertahankan kelengkapan dokumen', auditor:'Bpk. Hendra', tgl:'2025-01-10', status:'Selesai' }] },
+      { id:'lap_003', desaId:'desa_003', desaNama:'Desa Mulya Kencana', kec:'Gunung Agung', tahun:2025, periode:'Semester I', status:'Perlu koreksi', tglKirim:'2025-01-07', pagu:920000000, realisasi:{ pemerintahan:100000000, pembangunan:510000000, pembinaan:70000000, pemberdayaan:100000000, penanggulangan:33000000 }, keterangan:'', nomorSpj:'SPJ/003/2025', catatan:[{ id:'cat_002', jenis:'Keuangan', risiko:'Tinggi', uraian:'Bukti pembayaran honorarium tidak lengkap', rekomendasi:'Lengkapi bukti pembayaran dan unggah ulang dokumen SPJ', auditor:'Ibu Ratna', tgl:'2025-01-12', status:'Belum ditindaklanjuti' }] },
+    ];
+    localStorage.setItem('eaudit_laporan', JSON.stringify(laporan));
+  }
+}
+
+function populateDesaSelect() {
+  const desas = JSON.parse(localStorage.getItem('eaudit_desas')) || DESAS;
+  const sel = document.getElementById('desa-select');
+  sel.innerHTML = '<option value="">-- Pilih desa Anda --</option>' +
+    desas.map(d => `<option value="${d.id}">${d.nama} — ${d.kec}</option>`).join('');
+}
+
+let currentTab = 'inspektorat';
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='inspektorat')||(i===1&&tab==='desa')));
+  document.getElementById('form-inspektorat').style.display = tab === 'inspektorat' ? 'block' : 'none';
+  document.getElementById('form-desa').style.display = tab === 'desa' ? 'block' : 'none';
+  document.getElementById('err-msg').style.display = 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('err-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function loginInspektorat() {
+  const u = document.getElementById('ins-user').value.trim();
+  const p = document.getElementById('ins-pass').value;
+  if (u === INSPEKTORAT_CREDS.user && p === INSPEKTORAT_CREDS.pass) {
+    sessionStorage.setItem('eaudit_role', 'inspektorat');
+    sessionStorage.setItem('eaudit_user', JSON.stringify({ nama: 'Administrator Inspektorat', role: 'inspektorat' }));
+    window.location.href = 'pages/inspektorat.html';
+  } else {
+    showError('Username atau password inspektorat salah.');
+  }
+}
+
+function loginDesa() {
+  const desaId = document.getElementById('desa-select').value;
+  const pass = document.getElementById('desa-pass').value;
+  if (!desaId) { showError('Pilih desa terlebih dahulu.'); return; }
+  const desas = JSON.parse(localStorage.getItem('eaudit_desas')) || DESAS;
+  const desa = desas.find(d => d.id === desaId);
+  if (desa && pass === desa.pass) {
+    sessionStorage.setItem('eaudit_role', 'desa');
+    sessionStorage.setItem('eaudit_user', JSON.stringify({ ...desa, role: 'desa' }));
+    window.location.href = 'pages/desa.html';
+  } else {
+    showError('Password desa salah. Hubungi inspektorat jika lupa.');
+  }
+}
+
+seedData();
+populateDesaSelect();
+</script>
+</body>
+</html>

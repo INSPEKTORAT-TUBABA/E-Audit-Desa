@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operator Desa — e-Audit Dana Desa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+.page-section { display: none; }
+.page-section.active { display: block; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.catatan-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
+.catatan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.catatan-uraian { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+.catatan-rek { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.catatan-meta { font-size: 11px; color: var(--text-hint); margin-top: 6px; }
+.step-indicator { display: flex; gap: 0; margin-bottom: 24px; }
+.step { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-right: none; font-size: 12px; color: var(--text-muted); background: var(--surface); display: flex; align-items: center; gap: 8px; }
+.step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.step:last-child { border-right: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) 0; }
+.step.active { background: var(--accent-light); color: var(--primary); border-color: var(--accent); font-weight: 500; }
+.step.done { background: var(--surface); color: var(--text-muted); }
+.step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--border); color: var(--text-muted); font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step.active .step-num { background: var(--accent); color: var(--primary); }
+.step.done .step-num { background: var(--text-hint); color: #fff; }
+.input-rupiah { position: relative; }
+.input-rupiah span { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+.input-rupiah input { padding-left: 34px; }
+.field-hint { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+.sisa-display { font-family: var(--mono); font-size: 12px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-muted); }
+.timeline-item { display: flex; gap: 14px; padding-bottom: 18px; position: relative; }
+.timeline-item::before { content: ''; position: absolute; left: 15px; top: 28px; bottom: 0; width: 1px; background: var(--border); }
+.timeline-item:last-child::before { display: none; }
+.timeline-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; border: 2px solid var(--border); background: var(--card); }
+.timeline-content { flex: 1; padding-top: 4px; }
+.timeline-title { font-size: 13px; font-weight: 500; }
+.timeline-meta { font-size: 11px; color: var(--text-hint); margin-top: 3px; }
+.import-preview { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 14px; }
+.import-row { display: flex; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.import-row:last-child { border-bottom: none; }
+.import-label { color: var(--text-muted); }
+.import-val { font-family: var(--mono); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-mark">e</div>
+        <div>
+          <div class="logo-text">e-Audit Dana Desa</div>
+          <div class="logo-sub">Inspektorat Kab. Tulang Bawang Barat</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-name" id="sidebar-desa">—</div>
+      <div class="user-role" id="sidebar-kec">Operator Desa</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Menu Desa</div>
+      <button class="nav-item active" onclick="showSection('beranda')">
+        <span class="nav-icon">◉</span> Beranda
+      </button>
+      <button class="nav-item" onclick="showSection('input')">
+        <span class="nav-icon">✎</span> Input Laporan
+      </button>
+      <button class="nav-item" onclick="showSection('status')">
+        <span class="nav-icon">◐</span> Status Pengajuan
+      </button>
+      <button class="nav-item" onclick="showSection('catatan')">
+        <span class="nav-icon">⚑</span> Catatan Inspektorat
+        <span class="nav-badge" id="badge-cat" style="display:none">!</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="Auth.logout()">&#8592; Keluar dari sistem</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="section-title">Beranda</div>
+        <div class="topbar-sub" id="topbar-sub">Tahun Anggaran 2025</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== BERANDA ===== -->
+      <div class="page-section active" id="sec-beranda">
+        <div class="stats-grid" id="beranda-stats"></div>
+        <div id="beranda-alert"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Riwayat pengajuan laporan</div>
+            <div id="beranda-timeline"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Catatan terbaru inspektorat</div>
+            <div id="beranda-catatan"></div>
+          </div>
+        </div>
+        <div class="card" style="background:var(--surface);border-style:dashed;text-align:center;padding:20px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:6px">Siap input laporan baru?</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Import data dari Siskeudes atau isi manual</div>
+          <button class="btn btn-primary" onclick="showSection('input');document.querySelector('[onclick=\"showSection(\'input\')\"]').classList.add('active')">Mulai input laporan ↗</button>
+        </div>
+      </div>
+
+      <!-- ===== INPUT LAPORAN ===== -->
+      <div class="page-section" id="sec-input">
+        <div class="step-indicator">
+          <div class="step active" id="step-1"><div class="step-num">1</div> Info umum</div>
+          <div class="step" id="step-2"><div class="step-num">2</div> Data realisasi</div>
+          <div class="step" id="step-3"><div class="step-num">3</div> Keterangan & kirim</div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="form-step-1">
+          <div class="card">
+            <div class="section-div">Informasi laporan</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nama desa</label>
+                <input type="text" id="f-desa" readonly>
+              </div>
+              <div class="form-group">
+                <label>Kecamatan</label>
+                <input type="text" id="f-kec" readonly>
+              </div>
+              <div class="form-group">
+                <label>Tahun anggaran</label>
+                <select id="f-tahun"><option>2025</option><option>2024</option></select>
+              </div>
+              <div class="form-group">
+                <label>Periode laporan</label>
+                <select id="f-periode">
+                  <option>Semester I</option>
+                  <option>Semester II</option>
+                  <option>Tahunan</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Nomor SPJ</label>
+                <input type="text" id="f-spj" placeholder="SPJ/001/2025">
+              </div>
+              <div class="form-group">
+                <label>Tanggal laporan</label>
+                <input type="date" id="f-tgl">
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="goStep(2)">Lanjut ke data realisasi →</button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="form-step-2" style="display:none">
+          <div class="card">
+            <div class="section-div" style="display:flex;justify-content:space-between;align-items:center">
+              <span>Import dari Siskeudes (opsional)</span>
+            </div>
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-csv').click()" ondragover="dragOver(event)" ondrop="dropFile(event)">
+              <div class="upload-icon">📄</div>
+              <div class="upload-text">Klik atau seret file ekspor Siskeudes di sini</div>
+              <div class="upload-hint">Format: CSV export dari Siskeudes (Laporan Realisasi APBDesa)</div>
+            </div>
+            <input type="file" id="file-csv" accept=".csv,.txt" style="display:none" onchange="handleFileImport(event)">
+            <div id="import-preview" style="display:none">
+              <div class="alert alert-success" style="margin-top:12px">Data Siskeudes berhasil diimport. Silakan periksa dan sesuaikan jika perlu.</div>
+              <div class="import-preview" id="import-preview-table"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-div">Realisasi per bidang (Rp)</div>
+            <div style="margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:8px">
+                <span>Pagu Dana Desa</span>
+                <span id="pagu-display" style="font-family:var(--mono);font-weight:500">—</span>
+              </div>
+              <div class="progress-wrap"><div class="progress-bar" id="serapan-bar" style="width:0%"></div></div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right" id="serapan-pct">Serapan: 0%</div>
+            </div>
+
+            <div id="bidang-fields"></div>
+
+            <div style="background:var(--surface);border-radius:var(--radius);padding:12px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;font-weight:600;color:var(--text)">Total realisasi</span>
+              <span id="total-real" style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--primary)">Rp 0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:12px;color:var(--text-muted)">
+              <span>Sisa anggaran</span>
+              <span id="sisa-real" style="font-family:var(--mono)">—</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <button class="btn" onclick="goStep(1)">← Kembali</button>
+            <button class="btn btn-primary" onclick="goStep(3)">Lanjut ke keterangan →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="form-step-3" style="display:none">
+          <div class="card">
+            <div class="section-div">Keterangan tambahan</div>
+            <div class="form-group full" style="margin-bottom:14px">
+              <label>Keterangan laporan</label>
+              <textarea id="f-ket" placeholder="Tuliskan keterangan tambahan, kendala pelaksanaan, atau hal penting lainnya..."></textarea>
+            </div>
+            <div class="section-div" style="margin-top:0">Ringkasan sebelum dikirim</div>
+            <div id="ringkasan"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:10px">
+            <button class="btn" onclick="goStep(2)">← Kembali</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn" onclick="simpanDraf()">Simpan sebagai draf</button>
+              <button class="btn btn-accent" onclick="kirimLaporan()">Kirim ke inspektorat ✓</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== STATUS PENGAJUAN ===== -->
+      <div class="page-section" id="sec-status">
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Periode</th><th>Tahun</th><th>Pagu</th><th>Realisasi</th><th>Serapan</th><th>Status</th><th>Catatan</th><th>Tgl kirim</th>
+              </tr></thead>
+              <tbody id="status-laporan-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="margin-top:4px;text-align:center">
+          <button class="btn btn-primary" onclick="showSection('input');document.querySelector('[onclick=\"showSection(\'input\')\"]').classList.add('active')">+ Input laporan baru</button>
+        </div>
+      </div>
+
+      <!-- ===== CATATAN INSPEKTORAT ===== -->
+      <div class="page-section" id="sec-catatan">
+        <div id="all-catatan"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main-content -->
+</div>
+
+<div id="toast"></div>
+
+<script src="../js/db.js"></script>
+<script>
+const user = Auth.requireRole('desa');
+
+// Set sidebar info
+document.getElementById('sidebar-desa').textContent = user.nama;
+document.getElementById('sidebar-kec').textContent = user.kec + ' — Operator Desa';
+document.getElementById('topbar-sub').textContent = user.kec + ' · TA 2025';
+
+// Set form readonly fields
+document.getElementById('f-desa').value = user.nama;
+document.getElementById('f-kec').value = user.kec;
+document.getElementById('f-tgl').value = new Date().toISOString().split('T')[0];
+
+const BIDANG = [
+  { key:'pemerintahan', label:'Penyelenggaraan Pemerintahan Desa' },
+  { key:'pembangunan', label:'Pelaksanaan Pembangunan Desa' },
+  { key:'pembinaan', label:'Pembinaan Kemasyarakatan Desa' },
+  { key:'pemberdayaan', label:'Pemberdayaan Masyarakat Desa' },
+  { key:'penanggulangan', label:'Penanggulangan Bencana / Keadaan Darurat' },
+];
+
+let currentStep = 1;
+
+function showSection(id) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const titles = { beranda:'Beranda', input:'Input Laporan Realisasi', status:'Status Pengajuan', catatan:'Catatan Inspektorat' };
+  document.getElementById('section-title').textContent = titles[id] || id;
+  if (id === 'beranda') renderBeranda();
+  if (id === 'status') renderStatusLaporan();
+  if (id === 'catatan') renderSemuaCatatan();
+  if (id === 'input') { renderBidangFields(); updateSerapan(); }
+}
+
+// ===== BERANDA =====
+function renderBeranda() {
+  const laporan = DB.getLaporanByDesa(user.id);
+  const latest = laporan[laporan.length - 1];
+  const real = latest ? Fmt.totalReal(latest.realisasi) : 0;
+  const pagu = user.pagu;
+
+  document.getElementById('beranda-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Pagu Dana Desa</div><div class="stat-val" style="font-size:20px">${Fmt.rupiahShort(pagu)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Realisasi</div><div class="stat-val" style="font-size:20px">${real > 0 ? Fmt.rupiahShort(real) : '—'}</div></div>
+    <div class="stat-card"><div class="stat-label">Status laporan</div><div class="stat-val" style="font-size:16px">${latest ? latest.status : 'Belum ada'}</div></div>
+    <div class="stat-card"><div class="stat-label">Catatan inspektorat</div><div class="stat-val">${latest ? (latest.catatan||[]).length : 0}</div></div>`;
+
+  // Alert
+  const alertEl = document.getElementById('beranda-alert');
+  if (latest) {
+    const catBelum = (latest.catatan||[]).filter(c => c.status !== 'Selesai').length;
+    if (catBelum > 0)
+      alertEl.innerHTML = `<div class="alert alert-warn">Ada <b>${catBelum} catatan koreksi</b> dari inspektorat yang belum ditindaklanjuti. Periksa menu Catatan Inspektorat.</div>`;
+    else if (latest.status === 'Selesai')
+      alertEl.innerHTML = `<div class="alert alert-success">Laporan ${latest.periode} ${latest.tahun} telah selesai diaudit. Tidak ada catatan yang perlu ditindaklanjuti.</div>`;
+    else
+      alertEl.innerHTML = `<div class="alert alert-info">Laporan ${latest.periode} ${latest.tahun} sedang dalam proses audit. Pantau status secara berkala.</div>`;
+  } else {
+    alertEl.innerHTML = `<div class="alert alert-warn">Belum ada laporan yang dikirim. Silakan input laporan realisasi APBDesa melalui menu Input Laporan.</div>`;
+  }
+
+  // Timeline
+  const tlEl = document.getElementById('beranda-timeline');
+  const dotColors = { 'Selesai':'var(--accent)','Dalam review':'var(--warn)','Perlu koreksi':'var(--info)','Draf':'var(--border)' };
+  const icons = { 'Selesai':'✓','Dalam review':'⏳','Perlu koreksi':'!','Draf':'✏' };
+  tlEl.innerHTML = laporan.length ? laporan.slice().reverse().map(l => `
+    <div class="timeline-item">
+      <div class="timeline-dot" style="border-color:${dotColors[l.status]||'var(--border)'}">
+        <span style="font-size:12px;color:${dotColors[l.status]||'var(--text-muted)'}">${icons[l.status]||'•'}</span>
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-title">${l.periode} ${l.tahun} <span class="badge ${STATUS_BADGE[l.status]||'badge-gray'}" style="font-size:10px">${l.status}</span></div>
+        <div class="timeline-meta">Dikirim: ${Fmt.date(l.tglKirim)} · ${(l.catatan||[]).length} catatan · Serapan ${Fmt.pct(Fmt.totalReal(l.realisasi),l.pagu)}</div>
+      </div>
+    </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text-hint);padding:12px 0">Belum ada laporan yang dikirim</div>';
+
+  // Catatan terbaru
+  const catEl = document.getElementById('beranda-catatan');
+  const allCat = laporan.flatMap(l => (l.catatan||[]).map(c => ({...c, desaPeriode:`${l.periode} ${l.tahun}`})));
+  const risikoColor = { Rendah:'#4caf78', Sedang:'#e67e22', Tinggi:'#c0392b' };
+  catEl.innerHTML = allCat.length ? allCat.slice(-4).reverse().map(c => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${risikoColor[c.risiko]||'#ccc'}"></div>
+        <span style="font-weight:500">${c.uraian}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-hint)">${c.jenis} · ${c.risiko} · ${c.desaPeriode} · <span class="badge ${c.status==='Selesai'?'badge-green':'badge-amber'}" style="font-size:10px">${c.status}</span></div>
+    </div>`).join('')
+    : '<div style="font-size:12px;color:var(--text-hint);padding:12px 0">Belum ada catatan dari inspektorat</div>';
+
+  // Badge
+  const catBelum = allCat.filter(c => c.status !== 'Selesai').length;
+  const badge = document.getElementById('badge-cat');
+  badge.style.display = catBelum > 0 ? 'inline-block' : 'none';
+}
+
+// ===== FORM STEPS =====
+function goStep(n) {
+  currentStep = n;
+  document.getElementById('form-step-1').style.display = n===1?'block':'none';
+  document.getElementById('form-step-2').style.display = n===2?'block':'none';
+  document.getElementById('form-step-3').style.display = n===3?'block':'none';
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('step-'+i);
+    el.className = 'step' + (i===n?' active':i<n?' done':'');
+  });
+  if (n===2) { renderBidangFields(); updateSerapan(); }
+  if (n===3) renderRingkasan();
+}
+
+function renderBidangFields() {
+  document.getElementById('pagu-display').textContent = Fmt.rupiah(user.pagu);
+  document.getElementById('bidang-fields').innerHTML = BIDANG.map(b => `
+    <div style="margin-bottom:12px">
+      <label>${b.label}</label>
+      <div class="input-rupiah">
+        <span>Rp</span>
+        <input type="number" id="real-${b.key}" placeholder="0" oninput="updateSerapan()" min="0">
+      </div>
+    </div>`).join('');
+}
+
+function updateSerapan() {
+  const total = BIDANG.reduce((sum, b) => {
+    const v = parseFloat(document.getElementById('real-'+b.key)?.value) || 0;
+    return sum + v;
+  }, 0);
+  const pct = user.pagu > 0 ? Math.min((total/user.pagu)*100, 100) : 0;
+  const sisa = user.pagu - total;
+  document.getElementById('total-real').textContent = Fmt.rupiah(total);
+  document.getElementById('sisa-real').textContent = sisa >= 0 ? Fmt.rupiah(sisa) : `<span style="color:var(--danger)">Melebihi pagu: ${Fmt.rupiah(Math.abs(sisa))}</span>`;
+  document.getElementById('serapan-bar').style.width = pct.toFixed(1) + '%';
+  document.getElementById('serapan-bar').style.background = pct > 90 ? 'var(--accent)' : pct > 70 ? 'var(--warn)' : 'var(--danger)';
+  document.getElementById('serapan-pct').textContent = `Serapan: ${pct.toFixed(1)}%`;
+}
+
+function renderRingkasan() {
+  const realisasi = {};
+  BIDANG.forEach(b => realisasi[b.key] = parseFloat(document.getElementById('real-'+b.key)?.value) || 0);
+  const total = Object.values(realisasi).reduce((a,b) => a+b, 0);
+  const pct = ((total/user.pagu)*100).toFixed(1);
+  document.getElementById('ringkasan').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div class="stat-card"><div class="stat-label">Pagu</div><div class="stat-val" style="font-size:16px">${Fmt.rupiahShort(user.pagu)}</div></div>
+      <div class="stat-card"><div class="stat-label">Realisasi</div><div class="stat-val" style="font-size:16px">${Fmt.rupiahShort(total)}</div></div>
+      <div class="stat-card"><div class="stat-label">Serapan</div><div class="stat-val" style="font-size:16px">${pct}%</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px"><b>Desa:</b> ${user.nama} · <b>Kec:</b> ${user.kec}</div>
+    <div style="font-size:13px;color:var(--text-muted)"><b>Periode:</b> ${document.getElementById('f-periode').value} ${document.getElementById('f-tahun').value} · <b>No. SPJ:</b> ${document.getElementById('f-spj').value||'—'}</div>`;
+}
+
+// ===== SISKEUDES IMPORT =====
+function handleFileImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => processImport(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function dragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+function dropFile(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => processImport(ev.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function processImport(text) {
+  const parsed = Siskeudes.parse(text);
+  const bidangNames = { pemerintahan:'Pemerintahan', pembangunan:'Pembangunan', pembinaan:'Pembinaan', pemberdayaan:'Pemberdayaan', penanggulangan:'Penanggulangan' };
+
+  BIDANG.forEach(b => {
+    const el = document.getElementById('real-' + b.key);
+    if (el && parsed[b.key] > 0) el.value = Math.round(parsed[b.key]);
+  });
+  updateSerapan();
+
+  const total = BIDANG.reduce((s, b) => s + (parsed[b.key] || 0), 0);
+  document.getElementById('import-preview').style.display = 'block';
+  document.getElementById('import-preview-table').innerHTML = BIDANG.map(b => `
+    <div class="import-row">
+      <span class="import-label">${bidangNames[b.key]}</span>
+      <span class="import-val">${parsed[b.key] > 0 ? Fmt.rupiah(parsed[b.key]) : '—'}</span>
+    </div>`).join('') + `
+    <div class="import-row" style="background:var(--surface);font-weight:600">
+      <span>Total realisasi</span>
+      <span class="import-val">${Fmt.rupiah(total)}</span>
+    </div>`;
+  showToast('Data Siskeudes berhasil diimport dari ' + (document.getElementById('file-csv').files[0]?.name || 'file'));
+}
+
+function simpanDraf() {
+  const laporan = buatObjekLaporan('Draf');
+  DB.upsertLaporan(laporan);
+  showToast('Laporan disimpan sebagai draf');
+  goStep(1);
+  showSection('status');
+  renderStatusLaporan();
+}
+
+function kirimLaporan() {
+  const laporan = buatObjekLaporan('Dalam review');
+  DB.upsertLaporan(laporan);
+  showToast('Laporan berhasil dikirim ke inspektorat untuk diaudit!');
+  goStep(1);
+  showSection('status');
+  renderStatusLaporan();
+}
+
+function buatObjekLaporan(status) {
+  const realisasi = {};
+  BIDANG.forEach(b => realisasi[b.key] = parseFloat(document.getElementById('real-'+b.key)?.value) || 0);
+  return {
+    id: Fmt.id('lap'),
+    desaId: user.id,
+    desaNama: user.nama,
+    kec: user.kec,
+    tahun: parseInt(document.getElementById('f-tahun').value),
+    periode: document.getElementById('f-periode').value,
+    status,
+    tglKirim: document.getElementById('f-tgl').value,
+    pagu: user.pagu,
+    realisasi,
+    keterangan: document.getElementById('f-ket')?.value || '',
+    nomorSpj: document.getElementById('f-spj').value,
+    catatan: []
+  };
+}
+
+// ===== STATUS LAPORAN =====
+function renderStatusLaporan() {
+  const laporan = DB.getLaporanByDesa(user.id);
+  const tbody = document.getElementById('status-laporan-tbody');
+  if (laporan.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-hint)">Belum ada laporan yang dikirim</td></tr>';
+    return;
+  }
+  tbody.innerHTML = laporan.slice().reverse().map(l => {
+    const real = Fmt.totalReal(l.realisasi);
+    const pct = Fmt.pct(real, l.pagu);
+    return `<tr>
+      <td>${l.periode}</td>
+      <td>${l.tahun}</td>
+      <td style="font-family:var(--mono);font-size:12px">${Fmt.rupiahShort(l.pagu)}</td>
+      <td style="font-family:var(--mono);font-size:12px">${real > 0 ? Fmt.rupiahShort(real) : '—'}</td>
+      <td>${pct}</td>
+      <td><span class="badge ${STATUS_BADGE[l.status]||'badge-gray'}">${l.status}</span></td>
+      <td>${(l.catatan||[]).length > 0 ? `<span class="badge badge-amber">${(l.catatan||[]).length} catatan</span>` : '—'}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${Fmt.date(l.tglKirim)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== CATATAN INSPEKTORAT =====
+function renderSemuaCatatan() {
+  const laporan = DB.getLaporanByDesa(user.id);
+  const allCat = laporan.flatMap(l => (l.catatan||[]).map(c => ({...c, laporanId:l.id, desaPeriode:`${l.periode} ${l.tahun}`})));
+  const el = document.getElementById('all-catatan');
+  const risikoColor = { Rendah:'#4caf78', Sedang:'#e67e22', Tinggi:'#c0392b' };
+  if (allCat.length === 0) {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:40px;color:var(--text-hint)">Belum ada catatan dari inspektorat</div>';
+    return;
+  }
+  el.innerHTML = allCat.map(c => `
+    <div class="catatan-card">
+      <div class="catatan-header">
+        <div>
+          <span class="badge badge-gray">${c.jenis}</span>
+          <span class="badge ${RISIKO_BADGE[c.risiko]||''}">${c.risiko}</span>
+          <span style="font-size:11px;color:var(--text-hint);margin-left:6px">${c.desaPeriode}</span>
+        </div>
+        <span class="badge ${c.status==='Selesai'?'badge-green':'badge-amber'}" style="cursor:pointer" onclick="tandaiSelesai('${c.laporanId}','${c.id}')">${c.status}</span>
+      </div>
+      <div class="catatan-uraian">${c.uraian}</div>
+      <div class="catatan-rek">↳ Rekomendasi: ${c.rekomendasi}</div>
+      <div class="catatan-meta">Auditor: ${c.auditor} · ${Fmt.date(c.tgl)}</div>
+      ${c.status !== 'Selesai' ? `<div style="margin-top:10px"><button class="btn btn-accent btn-sm" onclick="tandaiSelesai('${c.laporanId}','${c.id}')">Tandai sudah ditindaklanjuti</button></div>` : ''}
+    </div>`).join('');
+}
+
+function tandaiSelesai(laporanId, catId) {
+  const l = DB.getLaporanById(laporanId);
+  if (!l) return;
+  const cat = l.catatan.find(c => c.id === catId);
+  if (cat) {
+    const newSt = cat.status === 'Selesai' ? 'Belum ditindaklanjuti' : 'Selesai';
+    DB.updateCatatanStatus(laporanId, catId, newSt);
+    renderSemuaCatatan();
+    renderBeranda();
+    showToast('Status catatan diperbarui');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3200);
+}
+
+// Init
+renderBeranda();
+</script>
+</body>
+</html>
